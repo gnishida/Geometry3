@@ -51,6 +51,7 @@ class Vertex {
   Edge *edge, *left;
   bool flag;
   Faces visibleFaces;
+  int id;
 };
 
 typedef vector<Vertex *> Vertices;
@@ -67,6 +68,7 @@ class Edge {
   Edge *twin, *next;
   Face *face;
   bool flag;
+  int id;
 };
 
 typedef vector<Edge *> Edges;
@@ -75,8 +77,10 @@ class Face {
  public:
   Face () {}
   bool visible(Vertex *v);
+
   Edge* edge;
   Vertices visibleVertices;
+  int id;
 };
 
 class Arrangement {

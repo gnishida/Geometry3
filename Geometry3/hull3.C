@@ -1,6 +1,10 @@
 #include "hull3.h"
 #include <fstream>
 
+int face_id = 0;
+int edge_id = 0;
+int vertex_id = 0;
+
 /**
  * Check if a point d is above the triangle {a, b, c}. 
  * This can be used to also check if the triangle is visible from the point d.
@@ -22,7 +26,8 @@ void convexHull3 (Points &points, vector<int> &hull)
 
 	// add vertices
 	for (int i = 0; i < points.size(); ++i) {
-		arr.addVertex(points[i]);
+		Vertex *v = arr.addVertex(points[i]);
+		v->id = vertex_id++;
 	}
 
 	init(arr);
@@ -33,12 +38,14 @@ void convexHull3 (Points &points, vector<int> &hull)
 	randomPermutation (n, p);
 
 	for (int i = 4; i < arr.vertices.size(); ++i) {
-		int r = p[r - 4] + 4;
+		int r = p[i - 4] + 4;
+
+		cout << "r: " << r << endl;
 
 		// Fconflict(Pr) is empty (that is, Pr lies inside C), nothing changes.
 		if (arr.vertices[r]->visibleFaces.size() == 0) continue;
 
-		cout << "Visible!!!" << endl;
+		cout << "Vertex " << arr.vertices[r]->id << " is outside the convex hull." << endl;
 		Edges horizon;
 		findHorizon(arr, arr.vertices[r], horizon);
 
@@ -101,6 +108,19 @@ void buildTetrahedron (Arrangement &arr, Vertex* v1, Vertex* v2, Vertex* v3, Ver
 	Edge* e10 = arr.addHalfEdge(v3, NULL, NULL, false);
 	Edge* e11 = arr.addHalfEdge(v4, NULL, NULL, false);
 	Edge* e12 = arr.addHalfEdge(v1, NULL, NULL, false);
+
+	e1->id = 0;
+	e2->id = 1;
+	e3->id = 2;
+	e4->id = 3;
+	e5->id = 4;
+	e6->id = 5;
+	e7->id = 6;
+	e8->id = 7;
+	e9->id = 8;
+	e10->id = 9;
+	e11->id = 10;
+	e12->id = 11;
 	
 	e1->next = e12; e1->twin = e7;
 	e2->next = e4; e2->twin = e8;
@@ -185,9 +205,9 @@ void listUpdateVertices(Arrangement &arr, Vertex *v, Edges &horizon, Vertices &v
 		vertices.push_back((*it).first);
 	}
 
-
+	cout << "Vertices to be update the conflict graph:" << endl;
 	for (int i = 0; i < vertices.size(); ++i) {
-		pp(vertices[i]->p);
+		cout << vertices[i]->id << endl;
 	}
 }
 
@@ -196,16 +216,24 @@ void listUpdateVertices(Arrangement &arr, Vertex *v, Edges &horizon, Vertices &v
  */
 void deleteVisibleCone(Arrangement &arr, Vertex *v)
 {
+	// clear the visited flag of all the edges
+	for (int i = 0; i < arr.edges.size(); ++i) {
+		arr.edges[i]->flag = false;
+	}
+
 	Edges toBeRemovedEdges;
 
 	for (int i = 0; i < v->visibleFaces.size(); ++i) {
 		Edge *e = v->visibleFaces[i]->edge;
 
-		Edges toBeRemovedEdges;
 		Edge *g = e;
 		do {
-			if (g->twin->face->visible(v)) {
-				toBeRemovedEdges.push_back(g);
+			if (!g->flag && !g->twin->flag) {
+				g->flag = true;
+
+				if (g->twin->face->visible(v)) {
+					toBeRemovedEdges.push_back(g);
+				}
 			}
 
 			g = g->twin->next;
@@ -215,12 +243,13 @@ void deleteVisibleCone(Arrangement &arr, Vertex *v)
 	// delete all the edges to be removed
 	for (int i = 0; i < toBeRemovedEdges.size(); ++i) {
 		arr.removeEdge(toBeRemovedEdges[i]);
+		cout << "Edge " << toBeRemovedEdges[i]->id << " was removed." << endl;
 	}
 
 	// delete all the faces to be removed
-	for (int i = 0; i < v->visibleFaces.size(); ++i) {
-		arr.removeFace(v->visibleFaces[i]);
-
+	while (v->visibleFaces.size() > 0) {
+		arr.removeFace(v->visibleFaces[0]);
+		cout << "Face " << v->visibleFaces[0]->id << " was removed." << endl;
 	}
 
 	v->visibleFaces.clear();
@@ -240,7 +269,9 @@ void addCone(Arrangement &arr, Vertex *v, Edges &horizon, Vertices &vertices)
 		Edge *e0 = horizon[i];
 
 		Edge *e1 = arr.addHalfEdge(e0->tail, NULL, NULL, false);
+		e1->id = edge_id++;
 		Edge *e2 = arr.addHalfEdge(v, NULL, NULL, false);
+		e2->id = edge_id++;
 		e1->twin = e2;
 		e2->twin = e1;
 		spokes1.push_back(e1);
@@ -257,10 +288,14 @@ void addCone(Arrangement &arr, Vertex *v, Edges &horizon, Vertices &vertices)
 	for (int i = 0; i < n; ++i) {
 		Face *f = new Face;
 		arr.faces.push_back(f);
+		f->id = face_id++;
 		arr.addBoundary(horizon[i], f);
+
+		cout << "add face: " << f->id << endl;
 
 		for (int j = 0; j < vertices.size(); ++j) {
 			if (f->visible(vertices[j])) {
+				cout << "Face " << f->id << " is visible from the vertex " << vertices[j]->id << endl;
 				f->visibleVertices.push_back(vertices[j]);
 				vertices[j]->visibleFaces.push_back(f);
 			}
@@ -411,6 +446,7 @@ void Arrangement::formFaces ()
 
 			Face *f = new Face;
 			faces.push_back(f);
+			f->id = face_id++;
 			addBoundary(l, f);
 		}
 	}
