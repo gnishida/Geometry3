@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
 	std::cin >> numCircles;
 
 	Points points;
-	Points hull;
+	vector<int> hull;
 
 	for (int i = 0; i < numCircles; ++i) {
 		double x, y, z;
@@ -25,9 +25,9 @@ int main(int argc, char *argv[]) {
 	convexHull3(points, hull);
 
 	// show the results
-	std::cout << hull.size();
+	std::cout << hull.size() << " ";
 	for (int i = 0; i < hull.size(); ++i) {
-		std::cout << " " << hull[i]->getP().x.mid() << " " << hull[i]->getP().y.mid() << " " << hull[i]->getP().z.mid();
+		std::cout << hull[i] << " ";
 	}
 
 	return 0;

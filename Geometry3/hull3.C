@@ -1,6 +1,10 @@
 #include "hull3.h"
 #include <fstream>
 
+/**
+ * Check if a point d is above the triangle {a, b, c}. 
+ * This can be used to also check if the triangle is visible from the point d.
+ */
 int Orient3D::sign ()
 {
   PV3 u = d->getP() - a->getP(), v = b->getP() - a->getP(), 
@@ -8,83 +12,300 @@ int Orient3D::sign ()
   return u.tripleProduct(v, w).sign();
 }
 
-void convexHull3 (Points &points, Points &hull)
+void convexHull3 (Points &points, vector<int> &hull)
 {
+	if (points.size() < 4) {
+		return;
+	}
+
 	Arrangement arr;
 
-	init(arr, points);
+	// add vertices
+	for (int i = 0; i < points.size(); ++i) {
+		arr.addVertex(points[i]);
+	}
 
-	debug(arr);
+	init(arr);
+
+	// Compute a random permutation p5, p6, . . . , pn of the remaining points.
+	int n = points.size() - 4;
+	int *p = new int [n];
+	randomPermutation (n, p);
+
+	for (int i = 4; i < arr.vertices.size(); ++i) {
+		int r = p[r - 4] + 4;
+
+		// Fconflict(Pr) is empty (that is, Pr lies inside C), nothing changes.
+		if (arr.vertices[r]->visibleFaces.size() == 0) continue;
+
+		cout << "Visible!!!" << endl;
+		Edges horizon;
+		findHorizon(arr, arr.vertices[r], horizon);
+
+		// list up all the vertices that have to be tested for the conflict graph
+		Vertices vertices;
+		listUpdateVertices(arr, arr.vertices[r], horizon, vertices);
+
+		// delete all the visible faces and edges except the horizon
+		deleteVisibleCone(arr, arr.vertices[r]);
+
+		// add all the outgoing edges from Pr, and all the new faces
+		addCone(arr, arr.vertices[r], horizon, vertices);
+	}
+
+	// build the return values
+	buildHull(arr, hull);
+
+	// debug
+	std::ofstream ofs("test.vtk");
+	outputVTK(points, hull, ofs);
 }
 
 /**
  * Find four points p1, p2, p3, p4 in P that form a tetrahedron, and build a tetrahedron.
  */
-void init (Arrangement &arr, Points &points)
+void init (Arrangement &arr)
 {
-	buildTetrahedron (arr, points[0], points[1], points[2], points[3]);
+	if (Orient3D(arr.vertices[0]->p, arr.vertices[1]->p, arr.vertices[2]->p, arr.vertices[3]->p) > 0) {
+		buildTetrahedron (arr, arr.vertices[0], arr.vertices[1], arr.vertices[2], arr.vertices[3]);
+	} else {
+		buildTetrahedron (arr, arr.vertices[0], arr.vertices[2], arr.vertices[1], arr.vertices[3]);
+	}
 
-	// permute the remained points
-
-	// Initialize the conflict graphwith all visible pairs(pt,f), where f is a facet of C and t > 4. 
-
-	for (int r = 5; r < points.size(); ++r) {
-		// Fconflict(Pr) is empty (that is, Pr lies inside C), nothing changes.
-
-
+	// Initialize the conflict graph with all visible pairs(pt,f), where f is a facet of C and t > 4. 
+	for (int i = 4; i < arr.vertices.size(); ++i) {
+		for (Faces::iterator f = arr.faces.begin(); f != arr.faces.end(); ++f) {
+			// check if this face is visible from the vertex
+			if ((*f)->visible(arr.vertices[i])) {
+				arr.vertices[i]->visibleFaces.push_back(*f);
+				(*f)->visibleVertices.push_back(arr.vertices[i]);
+			}
+		}
 	}
 }
 
 /**
  * Build a tetrahedron that consists of four points.
  */
-void buildTetrahedron (Arrangement &arr, Point* p1, Point* p2, Point* p3, Point* p4)
+void buildTetrahedron (Arrangement &arr, Vertex* v1, Vertex* v2, Vertex* v3, Vertex* v4)
 {
-	cout << "build tetrahedron" << endl;
-
-	Vertex* v1 = arr.addVertex(p1);
-	Vertex* v2 = arr.addVertex(p2);
-	Vertex* v3 = arr.addVertex(p3);
-	Vertex* v4 = arr.addVertex(p4);
-
-	Edge* e1 = arr.addHalfEdge(v1, NULL, NULL, true, false);
-	Edge* e2 = arr.addHalfEdge(v2, NULL, NULL, true, false);
-	Edge* e3 = arr.addHalfEdge(v3, NULL, NULL, true, false);
-	Edge* e4 = arr.addHalfEdge(v1, NULL, NULL, true, false);
-	Edge* e5 = arr.addHalfEdge(v2, NULL, NULL, true, false);
-	Edge* e6 = arr.addHalfEdge(v4, NULL, NULL, true, false);
-	Edge* e7 = arr.addHalfEdge(v2, NULL, NULL, true, false);
-	Edge* e8 = arr.addHalfEdge(v3, NULL, NULL, true, false);
-	Edge* e9 = arr.addHalfEdge(v1, NULL, NULL, true, false);
-	Edge* e10 = arr.addHalfEdge(v4, NULL, NULL, true, false);
-	Edge* e11 = arr.addHalfEdge(v4, NULL, NULL, true, false);
-	Edge* e12 = arr.addHalfEdge(v3, NULL, NULL, true, false);
+	Edge* e1 = arr.addHalfEdge(v1, NULL, NULL, false);
+	Edge* e2 = arr.addHalfEdge(v2, NULL, NULL, false);
+	Edge* e3 = arr.addHalfEdge(v4, NULL, NULL, false);
+	Edge* e4 = arr.addHalfEdge(v2, NULL, NULL, false);
+	Edge* e5 = arr.addHalfEdge(v3, NULL, NULL, false);
+	Edge* e6 = arr.addHalfEdge(v3, NULL, NULL, false);
+	Edge* e7 = arr.addHalfEdge(v2, NULL, NULL, false);
+	Edge* e8 = arr.addHalfEdge(v4, NULL, NULL, false);
+	Edge* e9 = arr.addHalfEdge(v1, NULL, NULL, false);
+	Edge* e10 = arr.addHalfEdge(v3, NULL, NULL, false);
+	Edge* e11 = arr.addHalfEdge(v4, NULL, NULL, false);
+	Edge* e12 = arr.addHalfEdge(v1, NULL, NULL, false);
 	
-	cout << "add half edge done." << endl;
-
-	e1->next = e4; e1->twin = e7;
-	e2->next = e5; e2->twin = e8;
-	e3->next = e12; e3->twin = e9;
-	e4->next = e9; e4->twin = e10;
-	e5->next = e7; e5->twin = e11;
+	e1->next = e12; e1->twin = e7;
+	e2->next = e4; e2->twin = e8;
+	e3->next = e11; e3->twin = e9;
+	e4->next = e7; e4->twin = e10;
+	e5->next = e6; e5->twin = e11;
 	e6->next = e10; e6->twin = e12;
 	e7->next = e2; e7->twin = e1;
 	e8->next = e3; e8->twin = e2;
 	e9->next = e1; e9->twin = e3;
-	e10->next = e11; e10->twin = e4;
-	e11->next = e6; e11->twin = e5;
-	e12->next = e8; e12->twin = e6;
-
-	cout << "edge built." << endl;
+	e10->next = e5; e10->twin = e4;
+	e11->next = e8; e11->twin = e5;
+	e12->next = e9; e12->twin = e6;
 
 	arr.formFaces();
-
-	cout << "form faces done." << endl;
 }
 
+/**
+ * Build a horizon that is a edge loop, 
+ * each of which has one face visible and the other invisible from the specified vertex.
+ */
+void findHorizon (Arrangement &arr, Vertex *v, Edges &horizon)
+{
+	// find an edge that constitutes a part of the horizon
+	Edge *e0 = NULL;
+	for (int i = 0; i < v->visibleFaces.size() && e0 == NULL; ++i) {
+		Edge *e = v->visibleFaces[i]->edge;
+		Edge *g = e;
+
+		do {
+			if (!g->twin->face->visible(v)) {
+				e0 = g;
+				break;
+			}
+
+			g = g->twin->next;
+		} while (g != e);
+	}
+
+	// traverse the next edges to find all the remaining parts of the horizon
+	Edge *e = e0;
+	do {
+		horizon.push_back(e);
+
+		e = e->twin->next;
+
+		// find a part of the horizon again
+		while (true) {
+			if (!e->twin->face->visible(v)) {
+				break;
+			}
+
+			e = e->next;
+		}
+	} while (e != e0);
+}
+
+/**
+ * List up all the vertices that have to be tested for the conflict graph.
+ */
+void listUpdateVertices(Arrangement &arr, Vertex *v, Edges &horizon, Vertices &vertices)
+{
+	map<Vertex*, bool> hashtable;
+
+	for (int i = 0; i < horizon.size(); ++i) {
+		Face* f1 = horizon[i]->face;
+		Face* f2 = horizon[i]->twin->face;
+
+		for (int j = 0; j < f1->visibleVertices.size(); ++j) {
+			if (f1->visibleVertices[j] != v) {
+				hashtable[f1->visibleVertices[j]] = true;
+			}
+		}
+		for (int j = 0; j < f2->visibleVertices.size(); ++j) {
+			if (f2->visibleVertices[j] != v) {
+				hashtable[f2->visibleVertices[j]] = true;
+			}
+		}
+	}
+
+	for (map<Vertex*, bool>::iterator it = hashtable.begin(); it != hashtable.end(); ++it) {
+		vertices.push_back((*it).first);
+	}
+
+
+	for (int i = 0; i < vertices.size(); ++i) {
+		pp(vertices[i]->p);
+	}
+}
+
+/**
+ * Delete all the visible faces and edges except the horizon.
+ */
+void deleteVisibleCone(Arrangement &arr, Vertex *v)
+{
+	Edges toBeRemovedEdges;
+
+	for (int i = 0; i < v->visibleFaces.size(); ++i) {
+		Edge *e = v->visibleFaces[i]->edge;
+
+		Edges toBeRemovedEdges;
+		Edge *g = e;
+		do {
+			if (g->twin->face->visible(v)) {
+				toBeRemovedEdges.push_back(g);
+			}
+
+			g = g->twin->next;
+		} while (g != e);
+	}
+
+	// delete all the edges to be removed
+	for (int i = 0; i < toBeRemovedEdges.size(); ++i) {
+		arr.removeEdge(toBeRemovedEdges[i]);
+	}
+
+	// delete all the faces to be removed
+	for (int i = 0; i < v->visibleFaces.size(); ++i) {
+		arr.removeFace(v->visibleFaces[i]);
+
+	}
+
+	v->visibleFaces.clear();
+}
+
+/**
+ * Add all the outgoing edges from the vertex v to the horizon edges.
+ * Also, update the conflict graph for the newly added faces.
+ */
+void addCone(Arrangement &arr, Vertex *v, Edges &horizon, Vertices &vertices)
+{
+	int n = horizon.size();
+
+	Edges spokes1;
+	Edges spokes2;
+	for (int i = 0; i < n; ++i) {
+		Edge *e0 = horizon[i];
+
+		Edge *e1 = arr.addHalfEdge(e0->tail, NULL, NULL, false);
+		Edge *e2 = arr.addHalfEdge(v, NULL, NULL, false);
+		e1->twin = e2;
+		e2->twin = e1;
+		spokes1.push_back(e1);
+		spokes2.push_back(e2);
+	}
+
+	for (int i = 0; i < n; ++i) {
+		Edge *e = horizon[i];
+		e->twin->next = spokes1[(i + 1) % n];
+		spokes1[i]->next = e;
+		spokes2[i]->next = spokes2[(i - 1 + n) % n];
+	}
+
+	for (int i = 0; i < n; ++i) {
+		Face *f = new Face;
+		arr.faces.push_back(f);
+		arr.addBoundary(horizon[i], f);
+
+		for (int j = 0; j < vertices.size(); ++j) {
+			if (f->visible(vertices[j])) {
+				f->visibleVertices.push_back(vertices[j]);
+				vertices[j]->visibleFaces.push_back(f);
+			}
+		}
+	}
+}
+
+void buildHull (Arrangement &arr, vector<int> &hull)
+{
+	for (Faces::iterator f = arr.faces.begin(); f != arr.faces.end(); ++f) {
+		Edge *e = (*f)->edge;
+		Edge *g = e;
+
+		do {
+			Point* p = g->tail->p;
+
+			int index = -1;
+
+			for (int i = 0; i < arr.vertices.size(); ++i) {
+				if (arr.vertices[i]->p == p) {
+					index = i;
+				}
+			}
+
+			hull.push_back(index);
+
+			g = g->twin->next;
+		} while (g != e);
+	}
+}
 
 //////////////////////////////////////////////////////////////////////////////////
 // arrangement
+
+void Vertex::removeVisibleFace (Face *f) {
+  int i = 0;
+  while (i < visibleFaces.size())
+    if (visibleFaces[i] == f) {
+      visibleFaces[i] = *(visibleFaces.end()-1);
+      visibleFaces.pop_back();
+	  break;
+    }
+    else
+      ++i;
+}
 
 bool Edge::incident (Edge *e) const
 {
@@ -105,6 +326,19 @@ Edge * Edge::formLoop ()
   return l;
 }
 
+/**
+ * Check if this face is visible from the specified vertex.
+ */
+bool Face::visible(Vertex *v)
+{
+	Point* p0 = edge->tail->p;
+	Point* p1 = edge->twin->next->tail->p;
+	Point* p2 = edge->twin->next->twin->next->tail->p;
+
+	if (Orient3D(p0, p1, p2, v->p) > 0) return true;
+	else return false;
+}
+
 Arrangement::~Arrangement ()
 {
   for (Vertices::iterator v = vertices.begin(); v != vertices.end(); ++v)
@@ -122,9 +356,9 @@ Vertex * Arrangement::addVertex (Point *p)
   return v;
 }
 
-Edge * Arrangement::addHalfEdge (Vertex *tail, Edge *twin, Edge *next, bool in, bool flag)
+Edge * Arrangement::addHalfEdge (Vertex *tail, Edge *twin, Edge *next, bool flag)
 {
-  Edge *e = new Edge(tail, twin, next, in, flag);
+  Edge *e = new Edge(tail, twin, next, flag);
   edges.push_back(e);
   return e;
 }
@@ -144,37 +378,48 @@ void Arrangement::removeEdge (Edge *e)
   delete e;
 }
 
+void Arrangement::removeFace (Face *f)
+{
+  int c = 0, i = 0;
+  while (i < faces.size())
+    if (faces[i] == f) {
+      faces[i] = *(faces.end()-1);
+      faces.pop_back();
+	  break;
+    }
+    else
+      ++i;
+
+  // update the conflict graph
+  for (int i = 0; i < f->visibleVertices.size(); ++i) {
+	  f->visibleVertices[i]->removeVisibleFace(f);
+  }
+
+  delete f;
+}
+
 void Arrangement::formFaces ()
 {
 	for (Faces::iterator f = faces.begin(); f != faces.end(); ++f)
 		delete *f;
 	faces.clear();
 
-	cout << "faces cleared." << endl;
-
 	Edges inner;
 	for (Edges::iterator e = edges.begin(); e != edges.end(); ++e) {
-		cout << "edge:" << endl;
-		pe(*e);
-
 		if (!(*e)->flag) {
-			cout << "  not visited => form loop." << endl;
 			Edge *l = (*e)->formLoop();
-
-			cout << "  OK." << endl;
 
 			Face *f = new Face;
 			faces.push_back(f);
 			addBoundary(l, f);
-
-			cout << "  added boundary." << endl;
 		}
 	}
 }
 
 void Arrangement::addBoundary (Edge *e, Face *f) const
 {
-  f->boundary.push_back(e);
+  f->edge = e;
+
   Edge *g = e;
   do {
     g->tail->flag = true;
@@ -187,41 +432,6 @@ void Arrangement::addBoundary (Edge *e, Face *f) const
 
 //////////////////////////////////////////////////////////////////////////////////
 // debug
-void debug (Arrangement &arr)
-{
-	Points points;
-	vector<int> data;
-
-	std::ofstream ofs("test.vtk");
-
-	for (Faces::iterator f = arr.faces.begin(); f != arr.faces.end(); ++f) {
-		Edge *e = (*f)->boundary[0];
-		Edge *g = e;
-
-		do {
-			Point* p = g->tail->p;
-
-			int index = -1;
-
-			for (int i = 0; i < points.size(); ++i) {
-				if (points[i] == p) {
-					index = i;
-				}
-			}
-
-			if (index == -1) {
-				points.push_back(p);
-				index = points.size() - 1;
-			}
-
-			data.push_back(index);
-
-			g = g->twin->next;
-		} while (g != e);
-	}
-
-	outputVTK(points, data, ofs);
-}
 
 void outputVTK (const Points &pts, const vector<int> &data, ostream &ostr)
 {

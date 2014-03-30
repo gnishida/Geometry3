@@ -27,19 +27,7 @@
     <ClCompile Include="permute.C">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tmap.C">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="triangulate.C">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="hull3.C">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="harrange.C">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="hull.C">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -56,19 +44,7 @@
     <ClInclude Include="pv.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="tmap.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="triangulate.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="hull3.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="harrange.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="hull.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="qd\qd_config.h">

@@ -61,26 +61,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="acp.cc" />
-    <ClCompile Include="harrange.C" />
-    <ClCompile Include="hull.C" />
     <ClCompile Include="hull3.C" />
     <ClCompile Include="permute.C" />
     <ClCompile Include="ps3-nishida.C" />
-    <ClCompile Include="tmap.C" />
-    <ClCompile Include="triangulate.C" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="acp.h" />
-    <ClInclude Include="harrange.h" />
-    <ClInclude Include="hull.h" />
     <ClInclude Include="hull3.h" />
     <ClInclude Include="object.h" />
     <ClInclude Include="permute.h" />
     <ClInclude Include="pv.h" />
     <ClInclude Include="qd\qd_config.h" />
     <ClInclude Include="qd\qd_inline.h" />
-    <ClInclude Include="tmap.h" />
-    <ClInclude Include="triangulate.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
