@@ -1,9 +1,9 @@
 #ifndef	ARRANGE
 #define ARRANGE
 
-#include "circle.h"
 #include <set>
 #include <map>
+#include "point.h"
 
 class Edge;
 
@@ -31,8 +31,6 @@ class Edge {
   Vertex * head () const { return twin->tail; }
   Vector tan () const { return Vector(tail->p, head()->p); }
   bool incident (Edge *e) const;
-  bool increasingX ();
-  bool increasingY ();
   bool clockwise (Edge *e);
   Edge * formLoop ();
   bool outer ();
@@ -64,24 +62,10 @@ class Arrangement {
   void removeEdge (Edge *e);
   void addLoop (const Points &pts);
   void formFaces ();
-  void addBoundary (Edge *e, Face *f) const;
 
   Vertices vertices;
   Edges edges;
   Faces faces;
 };
-
-class HeadXOrder {
- public:
-  bool operator() (Edge *e, Edge *f) const {
-    return e != f && XOrder(e->head()->p, f->head()->p) == 1;
-  }
-};
-
-Vertex * getVertex (Vertex *v, Vmap &vmap, Arrangement *a);
-
-Arrangement * boundary (Arrangement *a, SetOp op);
-
-bool boundary (Edge *e, SetOp op);
 
 #endif

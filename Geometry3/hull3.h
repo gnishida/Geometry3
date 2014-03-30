@@ -33,38 +33,77 @@ class InputPoint : public Point {
   InputPoint (double x, double y, double z) { p = PV3(x, y, z); }
 };
 
-int Orient3D::sign ()
-{
-  PV3 u = d->getP() - a->getP(), v = b->getP() - a->getP(), 
-    w = c->getP() - a->getP();
-  return u.tripleProduct(v, w).sign();
-}
-
-
 ///////////////////////////////////////////////////////////////////////////////////
-// Debug
+// Arrangement
 
-void outputVTK (const Points &pts, const vector<int> &data, ostream &ostr)
-{
-  int np = pts.size(), nt = data.size()/3;
-  ostr << setprecision(16) << "# vtk DataFile Version 3.0" << endl
-       << "vtk output" << endl << "ASCII" << endl
-       << "DATASET POLYDATA" << endl 
-       << "POINTS " << np << " double" << endl;
-  for (Points::const_iterator p = pts.begin(); p != pts.end(); ++p) {
-    const PV3 &q = (*p)->getP();
-    ostr << q.x.mid() << " " << q.y.mid() << " " << q.z.mid() << endl;
-  }
-  ostr << endl << "POLYGONS " << nt << " " << 4*nt << endl;
-  for (int i = 0; i < nt; ++i)
-    ostr << "3 " << data[3*i] << " " << data[3*i+1] << " "
-	 << data[3*i+2] << endl;
-  ostr << endl << "CELL_DATA " << nt << endl 
-       << "POINT_DATA " << np << endl;
-}
+class Edge;
+
+class Vertex {
+ public:
+  Vertex () : p(0), edge(0), left(0) {}
+  Vertex (Point *p) : p(p), edge(0), left(0) {}
+  ~Vertex () { delete p; }
+
+  Point *p;
+  Edge *edge, *left;
+  bool flag;
+};
+
+typedef vector<Vertex *> Vertices;
+
+class Face;
+
+class Edge {
+ public:
+  Edge (Vertex *tail, Edge *twin, Edge *next, bool in, bool flag)
+    : tail(tail), helper(0), twin(twin), next(next), face(0), in(in), flag(flag) {}
+  Vertex * head () const { return twin->tail; }
+  bool incident (Edge *e) const;
+  Edge * formLoop ();
+
+  Vertex *tail, *helper;
+  Edge *twin, *next;
+  Face *face;
+  bool in, flag;
+};
+
+typedef vector<Edge *> Edges;
+
+class Face {
+ public:
+  Face () {}
+
+  Edges boundary;
+};
+
+typedef vector<Face *> Faces;
+
+class Arrangement {
+ public:
+  Arrangement () {}
+  ~Arrangement ();
+  Vertex * addVertex (Point *p);
+  Edge * addHalfEdge (Vertex *tail, Edge *twin, Edge *next, bool in, bool flag);
+  void removeEdge (Edge *e);
+  void formFaces ();
+  void addBoundary (Edge *e, Face *f) const;
+
+  Vertices vertices;
+  Edges edges;
+  Faces faces;
+};
+
+
+
+
 
 void convexHull3 (Points &points, Points &hull);
-void init ((Arrangement &arr, Poihnts &poits);
+void init (Arrangement &arr, Points &poits);
 void buildTetrahedron (Arrangement &arr, Point* p1, Point* p2, Point* p3, Point* p4);
+void debug (Arrangement &arr);
+void outputVTK (const Points &pts, const vector<int> &data, ostream &ostr);
+void pp (Point *p);
+void pe (Edge *e);
+void pes (Edges &edges);
 
 #endif

@@ -3,8 +3,8 @@ COMPILE = g++ $(CFLAGS) -c
 LINK = g++ $(CFLAGS)
 LIBS = -lGL -lGLU -lglut -lqd -lmpfr
 
-all	: ps3-nishida.o arrange.o acp.o point.o circle.o
-	$(LINK) ps2-nishida.o arrange.o circle.o acp.o point.o $(LIBS) -o ps3-nishida
+all	: ps3-nishida.o harrange.o acp.o 
+	$(LINK) ps3-nishida.o harrange.o acp.o $(LIBS) -o ps3-nishida
 
 acp.o:	acp.cc acp.h
 	$(COMPILE) acp.cc
@@ -43,6 +43,9 @@ mindisk	: diskplot.o plot.o mindisk.o permute.o circle.o point.o acp.o
 
 arrange.o: arrange.C arrange.h point.h object.h pv.h acp.h circle.h
 	$(COMPILE) arrange.C
+
+harrange.o: harrange.C harrange.h pv.h acp.h 
+	$(COMPILE) harrange.C
 
 aplot.o	: aplot.C aplot.h arrange.h point.h pv.h acp.h
 	$(COMPILE) aplot.C
@@ -105,7 +108,7 @@ delaunay : delplot.o aplot.o plot.o delaunay.o permute.o arrange.o point.o acp.o
 	point.o acp.o \
 	$(LIBS) -o delaunay
 
-hull3.o	: hull3.C hull3.h object.h pv.h acp.h permute.h
+hull3.o	: hull3.C hull3.h object.h pv.h acp.h permute.h harrange.h
 	$(COMPILE) hull3.C
 
 hull3	: hull3.o acp.o permute.o

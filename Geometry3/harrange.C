@@ -43,16 +43,6 @@ bool Edge::incident (Edge *e) const
     head() == e->tail || head() == e->head();
 }
 
-bool Edge::increasingX ()
-{
-  return XOrder(tail->p, head()->p) == 1;
-}
-
-bool Edge::increasingY ()
-{
-  return YOrder(tail->p, head()->p) == 1;
-}
-
 bool Edge::clockwise (Edge *e)
 {
   bool inc = increasingY(), einc = e->increasingY();
@@ -145,27 +135,6 @@ void Arrangement::addLoop (const Points &pts)
   }
 }
 
-void Arrangement::intersectEdges ()
-{
-  Events heap;
-  makeHeap(edges, heap);
-  Sweep sweep;
-  EpairSet eset;
-  while (!heap.empty()) {
-    Event e = popHeap(heap);
-    switch (e.type) {
-    case Insert:
-      insert(e.a, sweep, heap, eset);
-      break;
-    case Remove:
-      remove(e.a, sweep, heap, eset);
-      break;
-    case Swap:
-      swap(e.a, e.b, e.p, sweep, heap, eset);
-    }
-  }
-}
-
 void Arrangement::insert (Edge *e, Sweep &sweep, Events &heap,
 			  EpairSet &eset) const
 {
@@ -177,96 +146,22 @@ void Arrangement::insert (Edge *e, Sweep &sweep, Events &heap,
   check(e, s, heap, eset);
 }
 
-void Arrangement::remove (Edge *e, Sweep &sweep, Events &heap,
-			  EpairSet &eset) const
-{
-  Edge *p = pred(e, sweep), *s = succ(e, sweep);
-  sweep.erase(e);
-  if (p && p->tail != e->tail)
-    e->tail->left = p->twin;
-  check(p, s, heap, eset);
-}
-
-void Arrangement::swap (Edge *e, Edge *f, Point *a, Sweep &sweep,
-			Events &heap, EpairSet &eset)
-{
-  Edge *p = pred(e, sweep), *s = succ(f, sweep);
-  sweep.erase(e);
-  sweep.erase(f);
-  split(e, f, a);
-  sweep.insert(e);
-  sweep.insert(f);
-  if (p)
-    e->head()->left = p->twin;
-  check(p, f, heap, eset);
-  check(e, s, heap, eset);
-}
-
 void Arrangement::formFaces ()
 {
-  for (Faces::iterator f = faces.begin(); f != faces.end(); ++f)
-    delete *f;
-  faces.clear();
-  Edges inner;
-  faces.push_back(new Face);
-  for (Edges::iterator e = edges.begin(); e != edges.end(); ++e)
-    if (!(*e)->flag) {
-      Edge *l = (*e)->formLoop();
-      if (l->outer()) {
-	Face *f = new Face;
-	faces.push_back(f);
-	addBoundary(l, f);
-      }
-      else
-	inner.push_back(l);
-    }
-  sort(inner.begin(), inner.end(), HeadXOrder());
-  for (Edges::iterator e = inner.begin(); e != inner.end(); ++e) {
-    Vertex *v = (*e)->head();
-    Face *f = v->left ? v->left->face : faces[0];
-    addBoundary(*e, f);
-  }
-}
+	for (Faces::iterator f = faces.begin(); f != faces.end(); ++f)
+		delete *f;
+	faces.clear();
 
-void Arrangement::addBoundary (Edge *e, Face *f) const
-{
-  f->boundary.push_back(e);
-  Edge *g = e;
-  do {
-    g->tail->flag = true;
-    g->flag = true;
-    g->face = f;
-    g = g->twin->next;
-  }
-  while (g != e);
-}
+	Edges inner;
+	faces.push_back(new Face);
+	for (Edges::iterator e = edges.begin(); e != edges.end(); ++e) {
+		if (!(*e)->flag) {
+			Edge *l = (*e)->formLoop();
 
-Vertex * getVertex (Vertex *v, Vmap &vmap, Arrangement *a)
-{
-  Vmap::iterator i = vmap.find(v);
-  if (i != vmap.end())
-    return i->second;
-  Vertex *w = a->addVertex(v->p->copy());
-  vmap.insert(Vpair(v, w));
-  return w;
-}
-
-Arrangement * boundary (Arrangement *a, SetOp op)
-{
-  Vmap vmap;
-  Arrangement *b = new Arrangement;
-  for (Edges::iterator e = a->edges.begin(); e != a->edges.end(); ++e) 
-    if (boundary(*e, op))
-      copyEdge(*e, true, vmap, b);
-  b->formFaces();
-  return b;
-}
-
-bool boundary (Edge *e, SetOp op)
-{
-  bool ein = setop(op, e->face->wna, e->face->wnb),
-    etin = setop(op, e->twin->face->wna, e->twin->face->wnb);
-  return ein && !etin;
+			Face *f = new Face;
+			faces.push_back(f);
+		}
+	}
 }
 
 void pe (Edge *e)
