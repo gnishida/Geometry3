@@ -22,6 +22,17 @@ class Point : public Object {
 
 typedef vector<Point *> Points;
 
+class Point2D : public Object {
+ private:
+  Parameters getParameters () { return Parameters(p); }
+ protected:
+  PV2 p;
+ public:
+  PV2 getP () { return p; }
+};
+
+typedef vector<Point2D *> Points2D;
+
 Predicate4(Orient3D, Point *, a, Point *, b, Point *, c, Point *,d);
 
 class InputPoint : public Point {
@@ -104,6 +115,7 @@ class Arrangement {
 
 
 void convexHull3 (Points &points, vector<int> &hull);
+void triangulate (Points2D &points2D, vector<int> &triangles);
 void init (Arrangement &arr);
 void buildTetrahedron (Arrangement &arr, Vertex* v1, Vertex* v2, Vertex* v3, Vertex* v4);
 void findHorizon (Arrangement &arr, Vertex *v, Edges &horizon);

@@ -69,6 +69,84 @@ void convexHull3 (Points &points, vector<int> &hull)
 }
 
 /**
+ * Delaunay triangulation using the same algorithm as convexHull3.
+ */
+void triangulate (Points2D &points2D, vector<int> &triangles)
+{
+	if (points2D.size() < 4) {
+		triangles.push_back(0);
+		triangles.push_back(1);
+		triangles.push_back(2);
+		return;
+	}
+
+	Arrangement arr;
+
+	// arrange the 3D points
+	Points points;
+	for (int i = 0; i < points2D.size(); ++i) {
+		double x = points2D[i]->getP().getX().mid();
+		double y = points2D[i]->getP().getY().mid();
+		double z = x * x + y * y;
+		points.push_back(new InputPoint(x, y, z));
+	}
+
+	// add vertices
+	for (int i = 0; i < points.size(); ++i) {
+		Vertex *v = arr.addVertex(points[i]);
+		v->id = vertex_id++;
+	}
+
+	init(arr);
+
+	// Compute a random permutation p5, p6, . . . , pn of the remaining points.
+	int n = points.size() - 4;
+	int *p = new int [n];
+	randomPermutation (n, p);
+
+	for (int i = 4; i < arr.vertices.size(); ++i) {
+		int r = p[i - 4] + 4;
+
+		cout << "r: " << r << endl;
+
+		// Fconflict(Pr) is empty (that is, Pr lies inside C), nothing changes.
+		if (arr.vertices[r]->visibleFaces.size() == 0) continue;
+
+		cout << "Vertex " << arr.vertices[r]->id << " is outside the convex hull." << endl;
+		Edges horizon;
+		findHorizon(arr, arr.vertices[r], horizon);
+
+		// list up all the vertices that have to be tested for the conflict graph
+		Vertices vertices;
+		listUpdateVertices(arr, arr.vertices[r], horizon, vertices);
+
+		// delete all the visible faces and edges except the horizon
+		deleteVisibleCone(arr, arr.vertices[r]);
+
+		// add all the outgoing edges from Pr, and all the new faces
+		addCone(arr, arr.vertices[r], horizon, vertices);
+	}
+
+	// list up all the faces that are visible from (0, 0, -oo)
+	for (Faces::iterator f = arr.faces.begin(); f != arr.faces.end(); ++f) {
+		Vertex *v0 = (*f)->edge->tail;
+		Vertex *v1 = (*f)->edge->twin->next->tail;
+		Vertex *v2 = (*f)->edge->twin->next->twin->next->tail;
+
+		// if it is not visible, then skip it.
+		PV3 u = v1->p->getP() - v0->p->getP();
+		PV3 v = v2->p->getP() - v0->p->getP();
+		PV3 w(0, 0, -1);
+		if (w.tripleProduct(u, v).sign() <= 0) continue;
+
+		// if it is visible, then copy the indices to the result
+		triangles.push_back(v0->id);
+		triangles.push_back(v1->id);
+		triangles.push_back(v2->id);
+	}
+}
+
+/**
  * Find four points p1, p2, p3, p4 in P that form a tetrahedron, and build a tetrahedron.
  */
 void init (Arrangement &arr)
