@@ -88,7 +88,7 @@ void triangulate (Points2D &points2D, vector<int> &triangles)
 		double x = points2D[i]->getP().getX().mid();
 		double y = points2D[i]->getP().getY().mid();
 		double z = x * x + y * y;
-		points.push_back(new InputPoint(x, y, z));
+		points.push_back(new InputPoint(x * 2, y * 2, z));
 	}
 
 	// add vertices
@@ -139,10 +139,12 @@ void triangulate (Points2D &points2D, vector<int> &triangles)
 		PV3 w(0, 0, -1);
 		if (w.tripleProduct(u, v).sign() <= 0) continue;
 
-		// if it is visible, then copy the indices to the result
+		// if it is visible, then copy the indices to the result.
+		// Note that since the triangle is in counter-clockwise order viewed from the bottom, 
+		// we have to reverse the order to get the counter-clockwise order viewed from the top.
 		triangles.push_back(v0->id);
-		triangles.push_back(v1->id);
 		triangles.push_back(v2->id);
+		triangles.push_back(v1->id);
 	}
 }
 

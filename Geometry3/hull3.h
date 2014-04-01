@@ -44,6 +44,15 @@ class InputPoint : public Point {
   InputPoint (double x, double y, double z) { p = PV3(x, y, z); }
 };
 
+class InputPoint2D : public Point2D {
+ private:
+  Objects getObjects () { return Objects(); }
+  void calculate () {}
+  InputPoint2D (const PV2 &ip) { p = ip; }
+ public:
+  InputPoint2D (double x, double y) { p = PV2(x, y); }
+};
+
 ///////////////////////////////////////////////////////////////////////////////////
 // Arrangement
 

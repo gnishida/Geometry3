@@ -63,7 +63,8 @@
     <ClCompile Include="acp.cc" />
     <ClCompile Include="hull3.C" />
     <ClCompile Include="permute.C" />
-    <ClCompile Include="ps3-nishida.C" />
+    <ClCompile Include="ps3-nishida-1.C" />
+    <ClCompile Include="ps3-nishida-2.C" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="acp.h" />
