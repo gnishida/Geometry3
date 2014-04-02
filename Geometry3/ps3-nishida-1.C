@@ -14,14 +14,14 @@ int main(int argc, char *argv[]) {
 
 	// read input data from the standard input
 	int numPoints;
-	std::cin >> numPoints;
+	cin >> numPoints;
 
 	Points points;
 	vector<int> hull;
 
 	for (int i = 0; i < numPoints; ++i) {
 		double x, y, z;
-		std::cin >> x >> y >> z;
+		cin >> x >> y >> z;
 
 		points.push_back(new InputPoint(x, y, z));
 	}
@@ -29,10 +29,11 @@ int main(int argc, char *argv[]) {
 	convexHull3(points, hull);
 
 	// show the results
-	std::cout << hull.size() / 3 << " ";
+	cout << hull.size() / 3 << " ";
 	for (int i = 0; i < hull.size(); ++i) {
-		std::cout << hull[i] << " ";
+		cout << hull[i] << " ";
 	}
+	cout << endl;
 
 	return 0;
 }

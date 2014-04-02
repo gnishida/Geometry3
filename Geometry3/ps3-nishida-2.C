@@ -14,14 +14,14 @@ int main(int argc, char *argv[]) {
 
 	// read input data from the standard input
 	int numPoints;
-	std::cin >> numPoints;
+	cin >> numPoints;
 
 	Points2D points;
 	vector<int> hull;
 
 	for (int i = 0; i < numPoints; ++i) {
 		double x, y;
-		std::cin >> x >> y;
+		cin >> x >> y;
 
 		points.push_back(new InputPoint2D(x, y));
 	}
@@ -30,10 +30,11 @@ int main(int argc, char *argv[]) {
 	triangulate(points, triangles);
 
 	// show the results
-	std::cout << triangles.size() / 3 << " ";
+	cout << triangles.size() / 3 << " ";
 	for (int i = 0; i < triangles.size(); ++i) {
-		std::cout << triangles[i] << " ";
+		cout << triangles[i] << " ";
 	}
+	cout << endl;
 
 	return 0;
 }

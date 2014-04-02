@@ -40,12 +40,10 @@ void convexHull3 (Points &points, vector<int> &hull)
 	for (int i = 4; i < arr.vertices.size(); ++i) {
 		int r = p[i - 4] + 4;
 
-		cout << "r: " << r << endl;
-
 		// Fconflict(Pr) is empty (that is, Pr lies inside C), nothing changes.
 		if (arr.vertices[r]->visibleFaces.size() == 0) continue;
 
-		cout << "Vertex " << arr.vertices[r]->id << " is outside the convex hull." << endl;
+		// Compute the horizon
 		Edges horizon;
 		findHorizon(arr, arr.vertices[r], horizon);
 
@@ -107,12 +105,10 @@ void triangulate (Points2D &points2D, vector<int> &triangles)
 	for (int i = 4; i < arr.vertices.size(); ++i) {
 		int r = p[i - 4] + 4;
 
-		cout << "r: " << r << endl;
-
 		// Fconflict(Pr) is empty (that is, Pr lies inside C), nothing changes.
 		if (arr.vertices[r]->visibleFaces.size() == 0) continue;
 
-		cout << "Vertex " << arr.vertices[r]->id << " is outside the convex hull." << endl;
+		// compute the horizon
 		Edges horizon;
 		findHorizon(arr, arr.vertices[r], horizon);
 
@@ -284,11 +280,6 @@ void listUpdateVertices(Arrangement &arr, Vertex *v, Edges &horizon, Vertices &v
 	for (map<Vertex*, bool>::iterator it = hashtable.begin(); it != hashtable.end(); ++it) {
 		vertices.push_back((*it).first);
 	}
-
-	cout << "Vertices to be update the conflict graph:" << endl;
-	for (int i = 0; i < vertices.size(); ++i) {
-		cout << vertices[i]->id << endl;
-	}
 }
 
 /**
@@ -323,13 +314,11 @@ void deleteVisibleCone(Arrangement &arr, Vertex *v)
 	// delete all the edges to be removed
 	for (int i = 0; i < toBeRemovedEdges.size(); ++i) {
 		arr.removeEdge(toBeRemovedEdges[i]);
-		cout << "Edge " << toBeRemovedEdges[i]->id << " was removed." << endl;
 	}
 
 	// delete all the faces to be removed
 	while (v->visibleFaces.size() > 0) {
 		arr.removeFace(v->visibleFaces[0]);
-		cout << "Face " << v->visibleFaces[0]->id << " was removed." << endl;
 	}
 
 	v->visibleFaces.clear();
@@ -358,6 +347,7 @@ void addCone(Arrangement &arr, Vertex *v, Edges &horizon, Vertices &vertices)
 		spokes2.push_back(e2);
 	}
 
+	// order the edges around the vertex, i.e. set the next pointer correctly
 	for (int i = 0; i < n; ++i) {
 		Edge *e = horizon[i];
 		e->twin->next = spokes1[(i + 1) % n];
@@ -365,17 +355,16 @@ void addCone(Arrangement &arr, Vertex *v, Edges &horizon, Vertices &vertices)
 		spokes2[i]->next = spokes2[(i - 1 + n) % n];
 	}
 
+	// Add the corresponding faces
 	for (int i = 0; i < n; ++i) {
 		Face *f = new Face;
 		arr.faces.push_back(f);
 		f->id = face_id++;
 		arr.addBoundary(horizon[i], f);
 
-		cout << "add face: " << f->id << endl;
-
+		// Also, update the conflict graph for added faces.
 		for (int j = 0; j < vertices.size(); ++j) {
 			if (f->visible(vertices[j])) {
-				cout << "Face " << f->id << " is visible from the vertex " << vertices[j]->id << endl;
 				f->visibleVertices.push_back(vertices[j]);
 				vertices[j]->visibleFaces.push_back(f);
 			}
